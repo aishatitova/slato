@@ -37,6 +37,11 @@ if (!telegramBotToken) {
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 function verifySignature(rawBody: string, signatureHeader: string | null) {
+  const secret = process.env.TELEGRAM_BOT_TOKEN
+  if (!secret) {
+    return false
+  }
+
   if (!signatureHeader) {
     return false
   }
@@ -45,7 +50,7 @@ function verifySignature(rawBody: string, signatureHeader: string | null) {
     ? signatureHeader.slice('sha256='.length)
     : signatureHeader
 
-  const expected = createHmac('sha256', telegramBotToken)
+  const expected = createHmac('sha256', secret)
     .update(rawBody)
     .digest('hex')
 
