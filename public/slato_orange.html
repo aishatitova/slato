@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Slato</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Unbounded:wght@700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Bebas+Neue&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root{
+  --org:#FF5C00;
+  --org2:#FF7A2E;
+  --org-bg:#FFF5EF;
+  --org-dim:#FFE8D8;
+  --ink:#1A1A1A;
+  --ink2:#3D3D3D;
+  --muted:#8A8A8A;
+  --line:rgba(0,0,0,.09);
+  --surf:#FFFFFF;
+  --bg:#F7F4F1;
+  --r:18px;
+  --shadow:0 2px 0 rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.08),0 20px 48px rgba(0,0,0,.06);
+  --shadow-hover:0 4px 0 rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.14),0 32px 80px rgba(0,0,0,.10);
+}
+
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+[contenteditable]{outline:none;cursor:text}
+[contenteditable]:focus{background:rgba(255,92,0,.07);border-radius:3px}
+button,input{font-family:inherit;cursor:pointer;border:none;background:none}
+
+/* ── APP GRID ── */
+.app{
+  display:grid;
+  height:100vh;
+  grid-template-rows:54px 1fr;
+  grid-template-columns:1fr 272px;
+  grid-template-areas:"nav nav" "main panel";
+}
+@media(max-width:767px){
+  .app{
+    grid-template-columns:1fr;
+    grid-template-rows:54px 58px 1fr 54px;
+    grid-template-areas:"nav" "genbar" "main" "strip";
+  }
+  .side-panel{display:none!important}
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOPNAV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+nav{
+  grid-area:nav;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;gap:16px;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:0.5px solid var(--line);
+  position:relative;z-index:50;
+}
+.logo{
+  font-family:'Unbounded',sans-serif;
+  font-size:15px;font-weight:900;
+  letter-spacing:-.04em;color:var(--ink);
+  flex-shrink:0;
+}
+.logo b{color:var(--org);font-style:normal}
+
+.gen-wrap{
+  flex:1;max-width:520px;
+  display:flex;align-items:center;gap:8px;
+}
+.gen-input{
+  flex:1;height:36px;padding:0 14px;
+  border-radius:10px;
+  background:rgba(0,0,0,.06);
+  font-size:13px;color:var(--ink);
+  outline:none;transition:background .15s;
+}
+.gen-input:focus{background:rgba(0,0,0,.09)}
+.gen-input::placeholder{color:var(--muted)}
+.gen-btn{
+  height:36px;padding:0 18px;border-radius:10px;
+  background:var(--org);color:#fff;
+  font-size:13px;font-weight:600;
+  white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+  transition:background .15s,transform .08s;
+  flex-shrink:0;
+}
+.gen-btn:hover{background:var(--org2)}
+.gen-btn:active{transform:scale(.96)}
+.gen-btn:disabled{background:#F5C4A8;cursor:default}
+.pulse{width:6px;height:6px;border-radius:50%;background:#34C759;flex-shrink:0}
+
+.nav-actions{display:flex;gap:8px;flex-shrink:0}
+.nav-btn{
+  height:32px;padding:0 13px;border-radius:8px;
+  font-size:13px;color:var(--muted);
+  transition:background .12s;
+}
+.nav-btn:hover{background:rgba(0,0,0,.06)}
+.nav-btn-fill{
+  height:32px;padding:0 14px;border-radius:8px;
+  background:var(--ink);color:#fff;
+  font-size:13px;font-weight:500;
+  transition:background .12s;
+}
+.nav-btn-fill:hover{background:#333}
+
+/* ── mobile genbar ── */
+.mob-gen{
+  grid-area:genbar;display:none;
+  align-items:center;gap:8px;padding:9px 16px;
+  background:var(--surf);
+  border-bottom:0.5px solid var(--line);
+}
+@media(max-width:767px){.mob-gen{display:flex}.gen-wrap{display:none}}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PROGRESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.prog{
+  position:fixed;top:54px;left:0;right:0;z-index:60;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);
+  border-bottom:0.5px solid var(--line);
+  padding:10px 20px;
+  display:none;flex-direction:column;gap:7px;
+}
+.prog-row{display:flex;align-items:center;gap:11px}
+.prog-ico{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--org-bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.prog-name{font-size:13px;font-weight:500;flex:1}
+.prog-track{flex:1;height:4px;border-radius:2px;background:#E8E8E8;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--org),var(--org2));transition:width .32s ease}
+.prog-val{font-size:11px;color:var(--muted);min-width:28px;text-align:right}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MAIN AREA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.main-area{
+  grid-area:main;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* tabs */
+.tabs{
+  display:flex;padding:0 20px;gap:2px;flex-shrink:0;
+  background:var(--surf);border-bottom:0.5px solid var(--line);
+}
+.tab{
+  padding:12px 16px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  border-bottom:2px solid transparent;
+  transition:all .15s;white-space:nowrap;
+}
+.tab.on{color:var(--org);border-bottom-color:var(--org)}
+.tab:hover{color:var(--ink)}
+
+/* canvas scroll */
+.canvas{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;align-items:center;
+  padding:28px 16px 80px;gap:20px;
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+}
+.canvas::-webkit-scrollbar{width:0}
+
+/* text outputs */
+.text-area{
+  flex:1;overflow-y:auto;padding:24px 20px;display:none;
+}
+.text-card{
+  background:var(--surf);border-radius:14px;
+  border:0.5px solid var(--line);padding:20px;
+  margin-bottom:14px;
+}
+.text-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.text-body{font-size:14px;line-height:1.75;color:var(--ink2);white-space:pre-wrap}
+.copy-btn{
+  margin-top:12px;padding:7px 14px;border-radius:8px;
+  border:0.5px solid var(--line);
+  font-size:12px;font-weight:500;color:var(--org);
+  transition:background .12s;
+}
+.copy-btn:hover{background:var(--org-bg)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CARD WRAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.cw{position:relative;animation:up .3s cubic-bezier(.16,1,.3,1) both}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.cw .cts{position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0;transition:opacity .14s;z-index:10}
+.cw:hover .cts,.cw.sel .cts{opacity:1}
+.ct{
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,.9);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:rgba(0,0,0,.5);
+  box-shadow:0 1px 5px rgba(0,0,0,.15);
+  transition:all .13s;
+}
+.ct:hover{background:#fff}
+.ct.x:hover{background:#FF3B30;color:#fff}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   THE CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.card{
+  border-radius:var(--r);overflow:hidden;position:relative;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+  transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s cubic-bezier(.16,1,.3,1);
+  will-change:transform;
+}
+.card:hover{transform:translateY(-3px) scale(1.007);box-shadow:var(--shadow-hover)}
+.cw.sel .card{box-shadow:0 0 0 2.5px var(--org),0 8px 28px rgba(255,92,0,.22),0 24px 60px rgba(255,92,0,.12)!important}
+
+.c-photo{position:absolute;inset:0;overflow:hidden}
+.c-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.c-upl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.c-upl input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upl-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.c-ov{position:absolute;inset:0;pointer-events:none}
+
+/* add card */
+.add-c{
+  border:1.5px dashed rgba(255,92,0,.25);border-radius:14px;
+  background:transparent;display:flex;align-items:center;
+  justify-content:center;gap:8px;height:56px;
+  font-size:13px;color:var(--muted);transition:all .18s;
+}
+.add-c:hover{border-color:var(--org);color:var(--org);background:var(--org-bg)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SIDE PANEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.side-panel{
+  grid-area:panel;
+  background:var(--surf);border-left:0.5px solid var(--line);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.side-panel::-webkit-scrollbar{width:0}
+
+.sec{padding:16px 18px;border-bottom:0.5px solid var(--line)}
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B0B0B0;margin-bottom:10px}
+.sec-scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
+.sec-scroll::-webkit-scrollbar{display:none}
+
+/* design thumb */
+.d-btn{flex-shrink:0;border:2px solid transparent;border-radius:10px;padding:0;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.d-btn.on{border-color:var(--org)}
+.d-wrap{width:54px;height:67px;border-radius:8px;overflow:hidden;display:block;pointer-events:none}
+
+/* palette dot */
+.p-dot{width:32px;height:32px;border-radius:10px;flex-shrink:0;border:2.5px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;position:relative}
+.p-dot:hover{transform:scale(1.1)}
+.p-dot.on{border-color:var(--org)}
+.p-dot.on::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+
+/* font pill */
+.f-btn{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:#FAFAFA;min-width:52px;cursor:pointer;transition:all .15s}
+.f-btn.on{border-color:var(--org);background:var(--org-bg)}
+.f-s{font-size:16px;line-height:1;color:var(--ink)}
+.f-l{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.f-btn.on .f-l{color:var(--org)}
+
+/* format */
+.fmt-row{display:flex;gap:6px}
+.fmt-b{flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid var(--line);font-size:11px;font-weight:500;color:var(--muted);text-align:center;transition:all .14s}
+.fmt-b.on{background:var(--org);border-color:var(--org);color:#fff;font-weight:700}
+
+/* inputs */
+.p-in{width:100%;padding:9px 12px;border-radius:10px;border:0.5px solid rgba(0,0,0,.12);background:#F7F7F7;font-size:13px;color:var(--ink);outline:none;transition:all .14s}
+.p-in:focus{border-color:var(--org);background:#fff}
+.p-in::placeholder{color:#C0C0C0}
+
+/* photo btn */
+.photo-btn{
+  width:100%;padding:10px;border-radius:10px;
+  border:1.5px dashed rgba(255,92,0,.3);background:var(--org-bg);
+  font-size:13px;color:var(--org);font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  cursor:pointer;position:relative;transition:all .14s;
+}
+.photo-btn:hover{background:var(--org-dim)}
+.photo-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.rm-btn{
+  width:100%;margin-top:5px;padding:8px;border-radius:9px;
+  border:0.5px solid rgba(255,59,48,.2);background:rgba(255,59,48,.06);
+  font-size:12px;color:#FF3B30;cursor:pointer;
+}
+
+/* add & export */
+.add-slide-btn{
+  margin:0 18px 12px;padding:10px;border-radius:10px;
+  border:1.5px dashed rgba(255,92,0,.22);
+  font-size:13px;color:var(--org);cursor:pointer;transition:all .14s;
+}
+.add-slide-btn:hover{background:var(--org-bg)}
+.export-btn{
+  margin:18px;padding:13px;border-radius:13px;
+  background:var(--org);color:#fff;
+  font-size:14px;font-weight:700;cursor:pointer;
+  transition:background .13s;
+  box-shadow:0 3px 12px rgba(255,92,0,.3);
+}
+.export-btn:hover{background:var(--org2)}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MOBILE STRIP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.strip{
+  grid-area:strip;display:none;
+  align-items:center;padding:7px 14px calc(7px + env(safe-area-inset-bottom,0px));
+  gap:7px;overflow-x:auto;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(20px);
+  border-top:0.5px solid var(--line);
+  scrollbar-width:none;
+}
+@media(max-width:767px){.strip{display:flex}}
+.strip::-webkit-scrollbar{display:none}
+.sth{width:36px;height:44px;border-radius:8px;flex-shrink:0;border:2px solid transparent;cursor:pointer;transition:border-color .13s;overflow:hidden}
+.sth.on{border-color:var(--org)}
+.sth-add{width:36px;height:44px;border-radius:8px;flex-shrink:0;border:1.5px dashed rgba(255,92,0,.2);display:flex;align-items:center;justify-content:center;font-size:19px;color:rgba(255,92,0,.4);cursor:pointer}
+
+/* FAB */
+.fab{display:none;position:fixed;bottom:calc(66px + env(safe-area-inset-bottom,0px));right:18px;z-index:40}
+@media(max-width:767px){.fab{display:block}}
+.fab button{width:48px;height:48px;border-radius:50%;background:var(--org);color:#fff;font-size:19px;box-shadow:0 4px 16px rgba(255,92,0,.38);display:flex;align-items:center;justify-content:center}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sh-bg{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:100;backdrop-filter:blur(3px);display:none}
+.sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surf);border-radius:22px 22px 0 0;
+  z-index:101;max-height:88vh;overflow-y:auto;
+  padding-bottom:env(safe-area-inset-bottom,18px);
+  display:none;
+}
+.sh-grip{width:36px;height:4px;border-radius:2px;background:#D8D8D8;margin:11px auto 0}
+.sh-head{font-size:15px;font-weight:600;padding:13px 20px 3px}
+.sh-sec{padding:13px 20px;border-top:0.5px solid var(--line)}
+.sh-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B0B0B0;margin-bottom:9px}
+.sh-scr{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.sh-scr::-webkit-scrollbar{display:none}
+.sh-in{width:100%;padding:11px 13px;border-radius:11px;border:0.5px solid rgba(0,0,0,.12);background:#F7F7F7;font-size:14px;color:var(--ink);outline:none}
+.sh-in:focus{border-color:var(--org)}
+.sh-ph{width:100%;padding:11px;border-radius:11px;border:1.5px dashed rgba(255,92,0,.28);background:var(--org-bg);font-size:14px;color:var(--org);font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;position:relative}
+.sh-ph input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.sh-brow{display:flex;gap:8px}
+.sh-b{flex:1;padding:11px;border-radius:11px;border:0.5px solid var(--line);font-size:13px;color:var(--muted);cursor:pointer;transition:background .12s}
+.sh-b:hover{background:#F5F5F5}
+.sh-b.del{border-color:rgba(255,59,48,.2);background:rgba(255,59,48,.06);color:#FF3B30}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ONBOARDING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.ob-scrim{position:fixed;inset:0;z-index:200;pointer-events:none}
+.ob-hl{position:fixed;z-index:201;border-radius:13px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.ob-box{
+  position:fixed;z-index:202;
+  background:var(--surf);border-radius:18px;
+  padding:20px 22px;width:276px;
+  box-shadow:0 8px 40px rgba(0,0,0,.2),0 0 0 .5px rgba(0,0,0,.07);
+  animation:obPop .26s cubic-bezier(.16,1,.3,1);
+}
+@keyframes obPop{from{opacity:0;transform:scale(.93) translateY(7px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.ob-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--org);margin-bottom:5px}
+.ob-ttl{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:7px}
+.ob-txt{font-size:13px;color:var(--muted);line-height:1.62;margin-bottom:17px}
+.ob-foot{display:flex;justify-content:space-between;align-items:center}
+.ob-skip{font-size:12px;color:#C0C0C0;cursor:pointer}
+.ob-skip:hover{color:var(--muted)}
+.ob-dots{display:flex;gap:4px}
+.ob-d{width:5px;height:5px;border-radius:50%;background:#E0E0E0;transition:all .2s}
+.ob-d.on{background:var(--org);width:13px;border-radius:3px}
+.ob-next{height:32px;padding:0 16px;border-radius:8px;background:var(--org);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s}
+.ob-next:hover{background:var(--org2)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- NAV -->
+<nav>
+  <div class="logo">sla<b>to</b></div>
+  <div class="gen-wrap">
+    <input id="ti" class="gen-input" placeholder="Введи тему — AI напишет карусель, Reels и посты..." onkeydown="if(event.key==='Enter')gen()">
+    <button class="gen-btn" id="gBtn" onclick="gen()"><div class="pulse"></div>Создать</button>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn">Поделиться</button>
+    <button class="nav-btn-fill" onclick="doExport()">⬇ Скачать</button>
+  </div>
+</nav>
+
+<!-- MOB GEN -->
+<div class="mob-gen">
+  <input id="tim" class="gen-input" style="flex:1;height:38px;border-radius:10px" placeholder="Введи тему..." onkeydown="if(event.key==='Enter')gen()">
+  <button class="gen-btn" style="height:38px;flex-shrink:0" onclick="gen()">Создать</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog" id="prog">
+  <div class="prog-row"><div class="prog-ico">⊞</div><div class="prog-name">Карусель</div><div class="prog-track"><div class="prog-fill" id="pf0" style="width:0"></div></div><div class="prog-val" id="pv0">0%</div></div>
+  <div class="prog-row"><div class="prog-ico">▷</div><div class="prog-name">Reels</div><div class="prog-track"><div class="prog-fill" id="pf1" style="width:0"></div></div><div class="prog-val" id="pv1">0%</div></div>
+  <div class="prog-row"><div class="prog-ico">✈</div><div class="prog-name">Telegram</div><div class="prog-track"><div class="prog-fill" id="pf2" style="width:0"></div></div><div class="prog-val" id="pv2">0%</div></div>
+  <div class="prog-row"><div class="prog-ico">◎</div><div class="prog-name">Threads</div><div class="prog-track"><div class="prog-fill" id="pf3" style="width:0"></div></div><div class="prog-val" id="pv3">0%</div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main-area">
+  <div class="tabs" id="tabs">
+    <button class="tab on" onclick="setTab('c',this)">Карусель</button>
+    <button class="tab" onclick="setTab('r',this)">▷ Reels</button>
+    <button class="tab" onclick="setTab('t',this)">✈ Telegram</button>
+    <button class="tab" onclick="setTab('th',this)">◎ Threads</button>
+  </div>
+  <div class="canvas" id="cv"></div>
+  <div class="text-area" id="ta"></div>
+</div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel">
+  <div class="sec"><div class="sec-lbl">Стиль</div><div class="sec-scroll" id="pD"></div></div>
+  <div class="sec"><div class="sec-lbl">Палитра</div><div class="sec-scroll" id="pP"></div></div>
+  <div class="sec"><div class="sec-lbl">Шрифт</div><div class="sec-scroll" id="pF"></div></div>
+  <div class="sec"><div class="sec-lbl">Формат</div><div class="fmt-row" id="pFmt"></div></div>
+  <div class="sec" id="photoSec">
+    <div class="sec-lbl">Фото</div>
+    <label class="photo-btn">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Загрузить фото
+      <input type="file" accept="image/*" onchange="uplSel(event)">
+    </label>
+    <button class="rm-btn" id="rmBtn" style="display:none" onclick="rmSel()">Убрать фото</button>
+  </div>
+  <div class="sec"><div class="sec-lbl">Подпись</div><input class="p-in" placeholder="@yourname" oninput="setH(this.value)"></div>
+  <div style="padding:13px 18px 6px"><button class="add-slide-btn" onclick="addCard()">＋ Добавить слайд</button></div>
+  <div style="flex:1"></div>
+  <button class="export-btn" onclick="doExport()">⬇ Скачать слайды</button>
+</div>
+
+<!-- STRIP -->
+<div class="strip" id="strip"></div>
+
+<!-- FAB -->
+<div class="fab"><button onclick="openSh()">✎</button></div>
+
+<!-- SHEET -->
+<div class="sh-bg" id="shBg" onclick="closeSh()"></div>
+<div class="sheet" id="sheet">
+  <div class="sh-grip"></div>
+  <div class="sh-head" id="shH">Слайд 1</div>
+  <div class="sh-sec"><div class="sh-lbl">Стиль</div><div class="sh-scr" id="shD"></div></div>
+  <div class="sh-sec"><div class="sh-lbl">Палитра</div><div class="sh-scr" id="shP"></div></div>
+  <div class="sh-sec"><div class="sh-lbl">Шрифт</div><div class="sh-scr" id="shF"></div></div>
+  <div class="sh-sec"><div class="sh-lbl">Фото</div>
+    <label class="sh-ph"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Загрузить фото<input type="file" accept="image/*" onchange="uplSel(event)"></label>
+  </div>
+  <div class="sh-sec"><div class="sh-lbl">Подпись</div><input class="sh-in" placeholder="@yourname" oninput="setH(this.value)"></div>
+  <div class="sh-sec"><div class="sh-brow">
+    <button class="sh-b" onclick="mvSel(-1)">↑ Выше</button>
+    <button class="sh-b" onclick="mvSel(1)">↓ Ниже</button>
+    <button class="sh-b del" onclick="dlSel()">Удалить</button>
+  </div></div>
+</div>
+
+<!-- ONBOARDING -->
+<div class="ob-scrim" id="obS" style="display:none"></div>
+<div class="ob-hl" id="obHL" style="display:none"></div>
+<div class="ob-box" id="obB" style="display:none">
+  <div class="ob-tag" id="obTag"></div>
+  <div class="ob-ttl" id="obTtl"></div>
+  <div class="ob-txt" id="obTxt"></div>
+  <div class="ob-foot">
+    <button class="ob-skip" onclick="obSkip()">Пропустить</button>
+    <div class="ob-dots" id="obDots"></div>
+    <button class="ob-next" onclick="obNext()">Далее →</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   DATA
+═══════════════════════════════════════ */
+const PAL=[
+  {id:"white",  sw:"#FFFFFF", bg:"#FFFFFF", tx:"#1A1A1A", mu:"rgba(26,26,26,.4)",  ac:"#FF5C00", dark:false, brd:"rgba(0,0,0,.09)"},
+  {id:"ink",    sw:"#1A1A1A", bg:"#1A1A1A", tx:"#F5F5F5", mu:"rgba(245,245,245,.38)", ac:"#FF7A2E", dark:true},
+  {id:"orange", sw:"#FF5C00", bg:"#FF5C00", tx:"#FFF7ED", mu:"rgba(255,247,237,.44)", ac:"#FFD08A", dark:true},
+  {id:"cream",  sw:"#F5ECD7", bg:"#F5ECD7", tx:"#2C1F0E", mu:"rgba(44,31,14,.42)", ac:"#C2410C", dark:false},
+  {id:"teal",   sw:"#0D4E4A", bg:"#0D4E4A", tx:"#CCFBF1", mu:"rgba(204,251,241,.38)", ac:"#2DD4BF", dark:true},
+  {id:"stone",  sw:"#292524", bg:"#1C1917", tx:"#F5F5F4", mu:"rgba(245,245,244,.36)", ac:"#F97316", dark:true},
+  {id:"merlot", sw:"#4A0E1F", bg:"#4A0E1F", tx:"#FFE4E9", mu:"rgba(255,228,233,.36)", ac:"#FB923C", dark:true},
+  {id:"sand",   sw:"#E8DCC8", bg:"#EDE3D0", tx:"#2A2318", mu:"rgba(42,35,24,.42)", ac:"#EA580C", dark:false},
+  {id:"night",  sw:"#0F172A", bg:"#0F172A", tx:"#E2E8F0", mu:"rgba(226,232,240,.36)", ac:"#FB923C", dark:true},
+  {id:"blush",  sw:"#FFF1F3", bg:"#FFF1F3", tx:"#3B0016", mu:"rgba(59,0,22,.42)", ac:"#E11D48", dark:false},
+];
+
+const FONTS=[
+  {id:"playfair", l:"Serif",   fam:"'Playfair Display',Georgia,serif", s:"Ag"},
+  {id:"unbounded",l:"Brutal",  fam:"'Unbounded',sans-serif",           s:"Ag"},
+  {id:"syne",     l:"Жирный",  fam:"'Syne',sans-serif",                s:"Ag"},
+  {id:"bebas",    l:"Капс",    fam:"'Bebas Neue',sans-serif",           s:"AG"},
+  {id:"inter",    l:"Чистый",  fam:"'Inter',sans-serif",               s:"Ag"},
+];
+
+const DSNS=[
+  {id:"editorial", l:"Editorial"},
+  {id:"poster",    l:"Плакат"},
+  {id:"photo",     l:"Фото"},
+  {id:"split",     l:"Сплит"},
+  {id:"stat",      l:"Цифры"},
+  {id:"minimal",   l:"Минимал"},
+];
+
+const FMTS=[
+  {id:"feed",    l:"4·5",  w:300,h:375},
+  {id:"stories", l:"9·16", w:211,h:375},
+  {id:"sq",      l:"1·1",  w:300,h:300},
+];
+
+const OBS=[
+  {el:"ti",       ttl:"Начни здесь ✦",           txt:"Введи тему — AI за 10 сек напишет карусель, Reels, Telegram и Threads."},
+  {el:"pD",       ttl:"Выбери стиль 🎨",           txt:"6 стилей: от editorial до huge poster. Меняются сразу во всей карусели."},
+  {el:"photoSec", ttl:"Добавь своё фото 📸",       txt:"Загрузи фото — оно заполнит весь фон. Работает для любого слайда."},
+  {el:"pP",       ttl:"Палитра и акцент 🎨",        txt:"10 цветовых схем 2026. Один клик — вся карусель меняет настроение."},
+];
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let cards=[
+  {id:1,h:"Введи тему выше — AI напишет всё",p:"Нажми «Создать» — за 10 секунд получишь 5 слайдов, сценарий Reels и посты.",tag:"Старт",photo:null},
+  {id:2,h:"Текст редактируется прямо здесь",p:"Нажми на любой текст на карточке и меняй как хочешь.",tag:"Редактор",photo:null},
+  {id:3,h:"Дизайн меняется одним нажатием",p:"Выбери стиль, палитру и шрифт в панели справа. Всё меняется сразу.",tag:"Дизайн",photo:null},
+];
+let sel=0,dsn=DSNS[0],pal=PAL[0],font=FONTS[0],fmt=FMTS[0],hdl="@yourname";
+let obStep=0,obDone=false;
+let _i=10;const uid=()=>_i++;
+let txts={r:"",t:"",th:""};
+
+/* ═══════════════════════════════════════
+   CARD RENDERER
+═══════════════════════════════════════ */
+function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+function cardHTML(d,idx){
+  const tot=cards.length,p=pal,fam=font.fam,w=fmt.w,h=fmt.h;
+  const hasPic=!!d.photo;
+  const did=(hasPic&&dsn.id!=="split")?"photo":dsn.id;
+
+  const upl=`<div class="c-upl">
+    <div class="upl-circle" style="background:${p.dark?"rgba(255,255,255,.15)":"rgba(0,0,0,.07)"}">
+      <svg width="15" height="15" fill="none" stroke="${p.dark?"rgba(255,255,255,.4)":"rgba(0,0,0,.35)"}" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+    </div>
+    <span style="font-size:11px;color:${p.dark?"rgba(255,255,255,.22)":"rgba(0,0,0,.22)"};pointer-events:none">Нажми — добавь фото</span>
+    <input type="file" accept="image/*" onchange="uplCard(event,${idx})">
+  </div>`;
+
+  const pho=`<div class="c-photo">${hasPic?`<img src="${d.photo}" alt="">`:upl}</div>`;
+  const brd=p.brd?`border:1px solid ${p.brd}`:"";
+
+  // shared editable elements
+  const eH=(sz,fw,cl,st="")=>`<div contenteditable="true" onblur="ob2(event,${idx},'h')" onclick="event.stopPropagation()" style="font-family:${fam};font-size:${sz}px;font-weight:${fw};line-height:1.14;letter-spacing:-.02em;color:${cl};${st}">${esc(d.h)}</div>`;
+  const eP=(cl,st="")=>`<div contenteditable="true" onblur="ob2(event,${idx},'p')" onclick="event.stopPropagation()" style="font-size:13px;font-weight:300;line-height:1.68;color:${cl};${st}">${esc(d.p)}</div>`;
+  const TAG=(cl,bg="transparent",pill=false)=>`<span style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${cl};${pill?`background:${bg};padding:3px 10px;border-radius:100px;display:inline-block`:""}">${esc(d.tag)}</span>`;
+  const FOOT=(cl)=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:13px"><span style="font-size:11px;color:${cl}">${esc(hdl)}</span><span style="font-size:11px;color:${cl}">${idx+1}/${tot}</span></div>`;
+
+  let body="";
+
+  // ── EDITORIAL ──
+  if(did==="editorial"){
+    const ts=w<250?22:28;
+    body=`
+    <div class="c-ov" style="background:linear-gradient(150deg,${p.ac}18 0%,transparent 55%)"></div>
+    <div style="position:absolute;inset:0;padding:26px 24px 22px;display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        ${TAG(p.ac)}
+        <div style="width:22px;height:1.5px;background:${p.ac};margin:9px 0;border-radius:1px"></div>
+      </div>
+      <div>
+        ${eH(ts,700,p.tx,"margin-bottom:12px")}
+        ${eP(p.mu)}
+        ${FOOT(p.mu)}
+      </div>
+    </div>`;
+  }
+
+  // ── POSTER — huge type fills card ──
+  else if(did==="poster"){
+    const ts=w<250?34:44;
+    body=`
+    <div style="position:absolute;inset:0;padding:20px 22px 20px;display:flex;flex-direction:column;justify-content:flex-end">
+      <div style="position:absolute;top:18px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:center">
+        ${TAG(p.ac)}
+        <span style="font-size:10px;color:${p.mu}">${String(idx+1).padStart(2,"0")}</span>
+      </div>
+      ${eH(ts,900,p.tx,"margin-bottom:11px;letter-spacing:-.03em")}
+      ${eP(p.mu)}
+      ${FOOT(p.mu)}
+    </div>`;
+  }
+
+  // ── PHOTO — cinematic ──
+  else if(did==="photo"){
+    body=`
+    <div class="c-ov" style="background:linear-gradient(to top,rgba(0,0,0,.95) 38%,rgba(0,0,0,.3) 70%,rgba(0,0,0,.08) 100%)"></div>
+    <div style="position:absolute;inset:0;padding:18px 20px 20px;display:flex;flex-direction:column;justify-content:space-between">
+      <div>${TAG("rgba(255,255,255,.82)","rgba(255,255,255,.13)",true)}</div>
+      <div>
+        <div contenteditable="true" onblur="ob2(event,${idx},'h')" onclick="event.stopPropagation()" style="font-family:${fam};font-size:${w<250?22:26}px;font-weight:700;line-height:1.16;letter-spacing:-.02em;color:#fff;margin-bottom:10px">${esc(d.h)}</div>
+        <div contenteditable="true" onblur="ob2(event,${idx},'p')" onclick="event.stopPropagation()" style="font-size:13px;font-weight:300;line-height:1.65;color:rgba(255,255,255,.56)">${esc(d.p)}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><span style="font-size:11px;color:rgba(255,255,255,.3)">${esc(hdl)}</span><span style="font-size:11px;color:rgba(255,255,255,.22)">${idx+1}/${tot}</span></div>
+      </div>
+    </div>`;
+  }
+
+  // ── SPLIT ──
+  else if(did==="split"){
+    const btBg=p.dark?"rgba(255,255,255,.07)":"#fff";
+    const btTx=p.dark?"rgba(255,255,255,.9)":"#1A1A1A";
+    const btMu=p.dark?"rgba(255,255,255,.4)":"rgba(0,0,0,.42)";
+    body=`
+    <div style="position:absolute;top:0;left:0;right:0;height:52%;display:flex;align-items:flex-end;padding:0 22px 13px">
+      ${TAG(p.dark?"rgba(255,255,255,.48)":p.ac)}
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:49%;background:${btBg};padding:15px 22px 18px;display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        <div contenteditable="true" onblur="ob2(event,${idx},'h')" onclick="event.stopPropagation()" style="font-family:${fam};font-size:${w<250?18:21}px;font-weight:700;line-height:1.18;color:${btTx};margin-bottom:7px;letter-spacing:-.015em">${esc(d.h)}</div>
+        <div contenteditable="true" onblur="ob2(event,${idx},'p')" onclick="event.stopPropagation()" style="font-size:12px;font-weight:300;line-height:1.62;color:${btMu}">${esc(d.p)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:10px;color:${btMu}">${esc(hdl)}</span><span style="font-size:10px;color:${btMu}">${idx+1}/${tot}</span></div>
+    </div>`;
+  }
+
+  // ── STAT — big number hero ──
+  else if(did==="stat"){
+    const NUMS=["82%","40K","×3","11→","01","02"];
+    const num=NUMS[idx%NUMS.length];
+    body=`
+    <div class="c-ov"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:2.5px;background:${p.ac}"></div>
+    <div style="position:absolute;inset:0;padding:22px 22px 20px;display:flex;flex-direction:column;justify-content:space-between">
+      <div style="display:flex;justify-content:space-between;align-items:center">${TAG(p.ac)}<span style="font-size:10px;color:${p.mu}">${String(idx+1).padStart(2,"0")}/${String(tot).padStart(2,"0")}</span></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:${w<250?64:82}px;font-weight:900;line-height:.9;color:${p.ac};letter-spacing:-.04em;margin-bottom:13px">${num}</div>
+        ${eH(w<250?17:20,700,p.tx,"margin-bottom:8px;letter-spacing:-.015em")}
+        ${eP(p.mu)}
+      </div>
+      <span style="font-size:11px;color:${p.mu}">${esc(hdl)}</span>
+    </div>`;
+  }
+
+  // ── MINIMAL ──
+  else if(did==="minimal"){
+    body=`
+    <div style="position:absolute;inset:0;padding:34px 30px;display:flex;flex-direction:column;justify-content:center">
+      ${TAG(p.ac)}
+      <div style="width:26px;height:1.5px;background:${p.ac};margin:13px 0 17px;border-radius:1px"></div>
+      ${eH(w<250?22:30,400,p.tx,"margin-bottom:14px;letter-spacing:-.025em")}
+      ${eP(p.mu)}
+    </div>
+    <div style="position:absolute;bottom:22px;left:30px;right:30px;display:flex;justify-content:space-between"><span style="font-size:10px;color:${p.mu}">${esc(hdl)}</span><span style="font-size:10px;color:${p.mu}">${idx+1}/${tot}</span></div>`;
+  }
+
+  return `<div class="card" style="width:${w}px;height:${h}px;background:${p.bg};${brd}" onclick="selCard(${idx})">${pho}${body}</div>`;
+}
+
+/* ═══════════════════════════════════════
+   THUMB (mini panel preview)
+═══════════════════════════════════════ */
+function mkThumb(did,p){
+  const {bg,tx,ac,mu,dark,brd}=p;
+  const s=`width:100%;height:100%;background:${bg};${brd?`border:1px solid ${brd}`:""}`;
+  const tag=`<div style="font-size:5px;color:${ac};font-weight:700;letter-spacing:.1em;text-transform:uppercase">TAG</div>`;
+  if(did==="editorial") return `<div style="${s};padding:7px;display:flex;flex-direction:column;justify-content:space-between">${tag}<div style="width:9px;height:1px;background:${ac};margin:2px 0 4px"></div><div style="font-size:9px;font-weight:700;color:${tx};font-family:serif;line-height:1.2">Заголовок</div><div style="font-size:4px;color:${mu};margin-top:3px">Описание</div><div style="font-size:4px;color:${mu};margin-top:auto">@handle</div></div>`;
+  if(did==="poster") return `<div style="${s};padding:7px;display:flex;flex-direction:column;justify-content:flex-end"><div style="font-size:5px;color:${ac};position:absolute;top:7px;left:7px">TAG</div><div style="font-size:15px;font-weight:900;color:${tx};line-height:1;letter-spacing:-.03em;margin-bottom:3px">ПЛАКАТ</div><div style="font-size:4px;color:${mu}">Описание</div></div>`;
+  if(did==="photo") return `<div style="${s};background:linear-gradient(to top,${bg} 42%,rgba(0,0,0,.45));display:flex;flex-direction:column;justify-content:space-between;padding:6px"><div style="font-size:4px;background:rgba(255,255,255,.14);color:rgba(255,255,255,.7);padding:2px 5px;border-radius:100px;display:inline-block">TAG</div><div><div style="font-size:9px;font-weight:700;color:#fff;margin-bottom:2px">Фото</div><div style="font-size:4px;color:rgba(255,255,255,.5)">Текст</div></div></div>`;
+  if(did==="split") return `<div style="width:100%;height:100%;display:flex;flex-direction:column"><div style="height:52%;background:${bg};display:flex;align-items:flex-end;padding:0 5px 3px">${tag}</div><div style="flex:1;background:${dark?"rgba(255,255,255,.08)":"#fff"};padding:5px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:7px;font-weight:700;color:${dark?"rgba(255,255,255,.9)":"#1A1A1A"}">Сплит</div><div style="font-size:4px;color:rgba(0,0,0,.3)">@handle</div></div></div>`;
+  if(did==="stat") return `<div style="${s};padding:7px"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${ac}"></div><div style="font-size:5px;color:${ac};margin-top:2px">TAG</div><div style="font-size:26px;font-weight:900;color:${ac};line-height:.9;margin:3px 0;font-family:'Syne',sans-serif">82%</div><div style="font-size:7px;font-weight:700;color:${tx}">Заголовок</div><div style="font-size:4px;color:${mu}">Описание</div></div>`;
+  if(did==="minimal") return `<div style="${s};display:flex;align-items:center;justify-content:center;padding:8px"><div style="text-align:center">${tag}<div style="width:11px;height:1px;background:${ac};margin:4px auto 5px"></div><div style="font-size:9px;font-weight:700;color:${tx};font-family:serif">Минимал</div></div></div>`;
+  return "";
+}
+
+/* ═══════════════════════════════════════
+   RENDER
+═══════════════════════════════════════ */
+function render(){
+  const cv=document.getElementById("cv");
+  cv.innerHTML="";
+  cv.style.display="flex";
+  document.getElementById("ta").style.display="none";
+  document.querySelectorAll(".tab").forEach((b,i)=>{if(i===0)b.classList.add("on");else b.classList.remove("on")});
+
+  cards.forEach((d,i)=>{
+    const cw=document.createElement("div");
+    cw.className=`cw${i===sel?" sel":""}`;
+    cw.innerHTML=`${cardHTML(d,i)}<div class="cts"><button class="ct" onclick="event.stopPropagation();dup(${i})">⊕</button><button class="ct x" onclick="event.stopPropagation();del(${i})">✕</button></div>`;
+    cv.appendChild(cw);
+  });
+  cv.style.maxWidth=(fmt.w+90)+"px";cv.style.margin="0 auto";cv.style.width="100%";
+
+  const ab=document.createElement("button");
+  ab.className="add-c";ab.textContent="＋ добавить слайд";ab.style.width=fmt.w+"px";
+  ab.onclick=addCard;cv.appendChild(ab);
+
+  renderStrip();buildPanels();
+  if(!obDone)setTimeout(()=>showOb(obStep),0);
+}
+
+function renderStrip(){
+  const s=document.getElementById("strip");s.innerHTML="";
+  cards.forEach((c,i)=>{
+    const t=document.createElement("div");
+    t.className=`sth${i===sel?" on":""}`;
+    t.style.background=c.photo?`url(${c.photo}) center/cover`:pal.bg;
+    if(pal.brd)t.style.border=`.5px solid ${pal.brd}`;
+    t.onclick=()=>{selCard(i);scToCard(i)};
+    s.appendChild(t);
+  });
+  const a=document.createElement("div");
+  a.className="sth-add";a.textContent="+";a.onclick=addCard;
+  s.appendChild(a);
+}
+
+function buildPanels(){
+  ["pD","shD"].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML="";
+    DSNS.forEach(d=>{
+      const b=document.createElement("button");
+      b.className=`d-btn${dsn.id===d.id?" on":""}`;
+      b.innerHTML=`<div class="d-wrap">${mkThumb(d.id,pal)}</div>`;
+      b.title=d.l;b.onclick=()=>{dsn=d;render()};
+      el.appendChild(b);
+    });
+  });
+  ["pP","shP"].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML="";
+    PAL.forEach(p=>{
+      const d=document.createElement("div");
+      d.className=`p-dot${pal.id===p.id?" on":""}`;
+      d.style.background=p.sw;
+      if(p.dark)d.style.setProperty("--ck","rgba(255,255,255,.85)");
+      d.title=p.id;d.onclick=()=>{pal=p;render()};
+      el.appendChild(d);
+    });
+  });
+  ["pF","shF"].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML="";
+    FONTS.forEach(f=>{
+      const b=document.createElement("button");
+      b.className=`f-btn${font.id===f.id?" on":""}`;
+      b.innerHTML=`<span class="f-s" style="font-family:${f.fam}">${f.s}</span><span class="f-l">${f.l}</span>`;
+      b.onclick=()=>{font=f;render()};el.appendChild(b);
+    });
+  });
+  const fe=document.getElementById("pFmt");if(fe){
+    fe.innerHTML="";
+    FMTS.forEach(f=>{
+      const b=document.createElement("button");
+      b.className=`fmt-b${fmt.id===f.id?" on":""}`;
+      b.textContent=f.l;b.onclick=()=>{fmt=f;render()};fe.appendChild(b);
+    });
+  }
+  const rm=document.getElementById("rmBtn");
+  if(rm)rm.style.display=cards[sel]?.photo?"block":"none";
+}
+
+/* ═══════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════ */
+function selCard(i){sel=i;document.querySelectorAll(".cw").forEach((w,j)=>w.classList.toggle("sel",j===i));renderStrip();buildPanels()}
+function scToCard(i){document.querySelectorAll(".cw")[i]?.scrollIntoView({behavior:"smooth",block:"center"})}
+function addCard(){cards.push({id:uid(),h:"Новый слайд",p:"Нажми и редактируй…",tag:"Совет",photo:null});sel=cards.length-1;render();setTimeout(()=>scToCard(sel),60)}
+function dup(i){cards.splice(i+1,0,{...cards[i],id:uid()});render()}
+function del(i){if(cards.length<=1)return;cards.splice(i,1);if(sel>=cards.length)sel=cards.length-1;render()}
+function mvSel(d){const ni=sel+d;if(ni<0||ni>=cards.length)return;[cards[sel],cards[ni]]=[cards[ni],cards[sel]];sel=ni;render()}
+function dlSel(){del(sel);closeSh()}
+function ob2(e,i,f){cards[i][f]=e.target.innerText}
+function uplCard(e,i){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{cards[i].photo=ev.target.result;render()};r.readAsDataURL(f);e.stopPropagation()}
+function uplSel(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{cards[sel].photo=ev.target.result;render()};r.readAsDataURL(f)}
+function rmSel(){cards[sel].photo=null;render()}
+function setH(v){hdl=v||"@yourname";render()}
+function doExport(){alert('В Cursor напиши:\n«Добавь кнопку экспорта: каждый .card рендерится через html2canvas с scale:3 и сохраняется в ZIP через jszip»')}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+function setTab(t,btn){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");
+  const cv=document.getElementById("cv"),ta=document.getElementById("ta");
+  if(t==="c"){cv.style.display="flex";ta.style.display="none";return}
+  cv.style.display="none";ta.style.display="block";
+  const lbls={r:"Сценарий Reels / TikTok",t:"Пост для Telegram",th:"Пост для Threads / Instagram"};
+  ta.innerHTML=`<div class="text-card"><div class="text-lbl">${lbls[t]}</div><div class="text-body">${txts[t]||"Введи тему и нажми «Создать» — AI напишет за 10 секунд"}</div>${txts[t]?`<button class="copy-btn" onclick="navigator.clipboard.writeText('${txts[t].replace(/'/g,"\\'")}')">Копировать</button>`:""}</div>`;
+}
+
+/* ═══════════════════════════════════════
+   SHEET
+═══════════════════════════════════════ */
+function openSh(){document.getElementById("shBg").style.display="block";document.getElementById("sheet").style.display="block";document.getElementById("shH").textContent=`Слайд ${sel+1}`;buildPanels()}
+function closeSh(){document.getElementById("shBg").style.display="none";document.getElementById("sheet").style.display="none"}
+
+/* ═══════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════ */
+function showOb(step){
+  if(step>=OBS.length){obSkip();return}
+  const ob=OBS[step];
+  const el=document.getElementById(ob.el);if(!el){obSkip();return}
+  const rc=el.getBoundingClientRect();const pad=8;
+  ["obS","obHL","obB"].forEach(id=>document.getElementById(id).style.display="block");
+  const hl=document.getElementById("obHL");
+  hl.style.cssText=`display:block;top:${rc.top-pad}px;left:${rc.left-pad}px;width:${rc.width+pad*2}px;height:${rc.height+pad*2}px`;
+  const box=document.getElementById("obB");
+  const below=window.innerHeight-rc.bottom;
+  const top=below>200?rc.bottom+14:rc.top-215;
+  box.style.top=Math.max(12,Math.min(top,window.innerHeight-230))+"px";
+  box.style.left=Math.max(14,Math.min(rc.left,window.innerWidth-294))+"px";
+  document.getElementById("obTag").textContent=`Шаг ${step+1} / ${OBS.length}`;
+  document.getElementById("obTtl").textContent=ob.ttl;
+  document.getElementById("obTxt").textContent=ob.txt;
+  document.getElementById("obDots").innerHTML=OBS.map((_,i)=>`<div class="ob-d${i===step?" on":""}"></div>`).join("");
+  const nb=document.querySelector(".ob-next");if(nb)nb.textContent=step===OBS.length-1?"Готово →":"Далее →";
+}
+function obNext(){obStep++;if(obStep>=OBS.length)obSkip();else showOb(obStep)}
+function obSkip(){obDone=true;["obS","obHL","obB"].forEach(id=>document.getElementById(id).style.display="none")}
+
+/* ═══════════════════════════════════════
+   AI GENERATION
+═══════════════════════════════════════ */
+async function gen(){
+  const t=(document.getElementById("ti").value||document.getElementById("tim").value||"").trim();
+  if(!t){document.getElementById("ti").focus();return}
+  const btn=document.getElementById("gBtn");
+  btn.disabled=true;btn.innerHTML="Генерирую…";
+  document.getElementById("prog").style.display="flex";
+
+  const ivs={};
+  [0,1,2,3].forEach(i=>{
+    let p=0;ivs[i]=setInterval(()=>{
+      p=Math.min(p+Math.random()*15+5,95);
+      document.getElementById(`pf${i}`).style.width=Math.round(p)+"%";
+      document.getElementById(`pv${i}`).textContent=Math.round(p)+"%";
+    },130);
+  });
+
+  // AI генерация подключается на бэкенде (Next.js API route)
+  // Здесь демо-режим с реалистичным контентом
+  await new Promise(r=>setTimeout(r,2800));
+  try { throw new Error("demo") } catch {
+    cards=[
+      {id:uid(),h:`${t}: с чего начать прямо сейчас`,p:"Большинство делают это неправильно. Вот что реально работает.",tag:"Старт",photo:null},
+      {id:uid(),h:"Главная ошибка — её делают все",p:"Я сам так делал. Потом понял одну вещь — и всё изменилось.",tag:"Ошибки",photo:null},
+      {id:uid(),h:"Три шага которые работают",p:"Проверено на практике. Только конкретика — без воды.",tag:"Система",photo:null},
+      {id:uid(),h:"Результат уже на этой неделе",p:"Если применишь хотя бы один пункт — почувствуешь сразу.",tag:"Результат",photo:null},
+      {id:uid(),h:"Сохрани и поделись",p:"Если было полезно — поделись. Иногда один пост меняет всё.",tag:"CTA",photo:null},
+    ];
+    txts={
+      r:`🎯 ХУК:\n"Большинство не знают этого про ${t}..."\n\n📌 ОСНОВНАЯ ЧАСТЬ:\n1. Первый момент\n2. Второй момент\n3. Третий момент\n\n🔥 CTA:\n"Сохрани и подпишись"`,
+      t:`✨ ${t}\n\nВот что реально работает:\n\n→ Первый пункт\n→ Второй пункт\n→ Третий пункт\n\nСохрани. Поделись 👇`,
+      th:`${t} — объясняю как на самом деле.\n\n1. Первое\n2. Второе\n3. Третье\n\n#контент #советы`
+    };
+  }
+
+  [0,1,2,3].forEach(i=>{
+    clearInterval(ivs[i]);
+    document.getElementById(`pf${i}`).style.width="100%";
+    document.getElementById(`pv${i}`).innerHTML='<span style="color:#34C759;font-weight:700">✓</span>';
+  });
+  setTimeout(()=>document.getElementById("prog").style.display="none",800);
+  btn.disabled=false;btn.innerHTML='<div class="pulse"></div>Создать';
+  render();
+}
+
+/* INIT */
+render();
+setTimeout(()=>showOb(0),600);
+</script>
+</body>
+</html>
