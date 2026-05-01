@@ -10,14 +10,10 @@ type UserRow = {
   last_reset: string | null
 }
 
-function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL ?? ''
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    return null
-  }
-  return createClient(supabaseUrl, supabaseServiceRoleKey)
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 function dateKeyToday() {
   return new Date().toISOString().slice(0, 10)
@@ -32,14 +28,7 @@ function extractJson(text: string): unknown {
 
 export async function POST(request: Request) {
   try {
-    const supabase = getSupabaseClient()
     const geminiApiKey = process.env.GEMINI_API_KEY ?? ''
-    if (!supabase) {
-      return Response.json(
-        { error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' },
-        { status: 500 }
-      )
-    }
     if (!geminiApiKey) {
       return Response.json({ error: 'Missing GEMINI_API_KEY' }, { status: 500 })
     }
