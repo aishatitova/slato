@@ -14,9 +14,9 @@ type TabKey = "carousel" | "reels" | "telegram" | "threads";
 type CardStyle = "editorial" | "poster" | "photo" | "split" | "numbers" | "minimal";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
-const playfair = Playfair_Display({ subsets: ["latin", "cyrillic"] });
-const unbounded = Unbounded({ subsets: ["latin", "cyrillic"] });
-const syne = Syne({ subsets: ["latin", "cyrillic"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
+const unbounded = Unbounded({ subsets: ["latin"] });
+const syne = Syne({ subsets: ["latin"] });
 const bebas = Bebas_Neue({ subsets: ["latin"], weight: "400" });
 
 const fonts = [
