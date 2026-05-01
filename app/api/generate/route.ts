@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+export const dynamic = 'force-dynamic'
 
 type UserRow = {
   id: string
@@ -9,19 +10,14 @@ type UserRow = {
   last_reset: string | null
 }
 
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const geminiApiKey = process.env.GEMINI_API_KEY
-
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL ?? ''
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null
+  }
+  return createClient(supabaseUrl, supabaseServiceRoleKey)
 }
-
-if (!geminiApiKey) {
-  throw new Error('Missing GEMINI_API_KEY')
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 function dateKeyToday() {
   return new Date().toISOString().slice(0, 10)
@@ -36,6 +32,18 @@ function extractJson(text: string): unknown {
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseClient()
+    const geminiApiKey = process.env.GEMINI_API_KEY ?? ''
+    if (!supabase) {
+      return Response.json(
+        { error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' },
+        { status: 500 }
+      )
+    }
+    if (!geminiApiKey) {
+      return Response.json({ error: 'Missing GEMINI_API_KEY' }, { status: 500 })
+    }
+
     const body = (await request.json()) as {
       topic?: string
       telegramId?: string

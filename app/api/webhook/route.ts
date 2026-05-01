@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
+export const dynamic = 'force-dynamic'
 
 type UserRow = {
   id: string
@@ -21,20 +22,16 @@ type TelegramUpdate = {
   }
 }
 
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN
-const telegramWebAppUrl = process.env.TELEGRAM_WEBAPP_URL
+const telegramWebAppUrl = process.env.TELEGRAM_WEBAPP_URL ?? ''
 
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL ?? ''
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null
+  }
+  return createClient(supabaseUrl, supabaseServiceRoleKey)
 }
-
-if (!telegramBotToken) {
-  throw new Error('Missing TELEGRAM_BOT_TOKEN')
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 function verifySignature(rawBody: string, signatureHeader: string | null) {
   const secret = process.env.TELEGRAM_BOT_TOKEN
@@ -69,7 +66,12 @@ async function sendTelegramMessage(
   text: string,
   options?: Record<string, unknown>
 ) {
-  await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+  const token = process.env.TELEGRAM_BOT_TOKEN ?? ''
+  if (!token) {
+    return
+  }
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -81,6 +83,18 @@ async function sendTelegramMessage(
 }
 
 export async function POST(request: Request) {
+  const supabase = getSupabaseClient()
+  const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN ?? ''
+  if (!supabase) {
+    return Response.json(
+      { error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' },
+      { status: 500 }
+    )
+  }
+  if (!telegramBotToken) {
+    return Response.json({ error: 'Missing TELEGRAM_BOT_TOKEN' }, { status: 500 })
+  }
+
   const rawBody = await request.text()
   const signatureHeader =
     request.headers.get('x-telegram-signature') ??
