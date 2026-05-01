@@ -1,23 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
-
-type UserRow = {
-  id: string
-  telegram_id: string
-  username: string | null
-  plan: 'free' | 'pro'
-  generations_today: number
-  last_reset: string | null
-}
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-function dateKeyToday() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 function extractJson(text: string): unknown {
   const trimmed = text.trim()
@@ -35,53 +16,12 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       topic?: string
-      telegramId?: string
     }
 
     const topic = body.topic?.trim()
-    const telegramId = body.telegramId?.trim()
 
-    if (!topic || !telegramId) {
-      return Response.json(
-        { error: 'topic and telegramId are required' },
-        { status: 400 }
-      )
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('telegram_id', telegramId)
-      .maybeSingle<UserRow>()
-
-    if (userError) {
-      return Response.json({ error: userError.message }, { status: 500 })
-    }
-
-    if (!user) {
-      return Response.json({ error: 'Пользователь не найден' }, { status: 404 })
-    }
-
-    const today = dateKeyToday()
-    let generationsToday = user.generations_today ?? 0
-
-    if (user.last_reset !== today) {
-      generationsToday = 0
-      const { error: resetError } = await supabase
-        .from('users')
-        .update({ generations_today: 0, last_reset: today })
-        .eq('id', user.id)
-
-      if (resetError) {
-        return Response.json({ error: resetError.message }, { status: 500 })
-      }
-    }
-
-    if (user.plan === 'free' && generationsToday >= 3) {
-      return Response.json(
-        { error: 'Лимит исчерпан. Перейди на Pro' },
-        { status: 429 }
-      )
+    if (!topic) {
+      return Response.json({ error: 'topic is required' }, { status: 400 })
     }
 
     const prompt = `Ты эксперт по вирусному контенту для Instagram. Тема: "${topic}".
@@ -149,18 +89,6 @@ export async function POST(request: Request) {
     }
 
     const payload = extractJson(generatedText)
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        generations_today: generationsToday + 1,
-        last_reset: today,
-      })
-      .eq('id', user.id)
-
-    if (updateError) {
-      return Response.json({ error: updateError.message }, { status: 500 })
-    }
 
     return Response.json(payload)
   } catch (error) {
